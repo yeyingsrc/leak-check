@@ -12,13 +12,13 @@ from models.request import ModelRequestQuery
 from models.response import ModelResponsePersonAggregated
 
 app = FastAPI(
-    root_path="/person",
-    title="api-dig.garinasset.com",
+    root_path="/breach",
+    title="172.16.1.4",
     version="1.0.0",
     summary="个人信息 “泄漏” 查询接口",
     contact={
         "name": "嘉林数据",
-        "url": "https://person.garinasset.com",
+        "url": "https://breach.garinasset.com",
         "email": "contact@garinasset.com",
     },
     license_info={
@@ -36,20 +36,20 @@ app.add_middleware(
 )
 
 
-@app.get("", summary="Hello person! 🚀 https://person.garinasset.com",
+@app.get("", summary="Hello breach! 🚀 http://172.16.1.4/breach",
          response_class=PlainTextResponse,
          responses={
              200: {
                  "content": {
                      "text/plain": {
-                         "example": "Hello person!\n"
+                         "example": "Hello breach!\n"
                      }
                  }
              }
          }
          )
 async def root():
-    return f"Hello person!\n"
+    return f"Hello breach!\n"
 
 
 @app.get("/", summary="响应 数据库 记录",
