@@ -2,7 +2,7 @@ from typing import Annotated, Sequence, Set
 
 from fastapi import Depends
 from pydantic import EmailStr
-from sqlalchemy import func, event
+from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, create_engine, select
 
@@ -98,7 +98,8 @@ def read_persons_by_dig(
         email_: str | None = None,
         qq_: int | None = None,
         max_depth: int = 2,  # ✅ 最大挖掘深度
-        max_records: int = 64  # ✅ 最大记录数保护（推荐）
+        max_records: int = 64,  # ✅ 最大记录数保护（推荐）
+        threshold: int = 8  # ✅ 关键：数据源阈值
 ) -> Sequence["Person"]:
     """
     深度查询（带深度限制 + 性能优化版）
@@ -128,25 +129,61 @@ def read_persons_by_dig(
         results = []
 
         # ✅ 分字段查询（避免 OR，全走索引）
+        # =========================
+        # 🚨 id 字段
+        # =========================
         if id_set:
-            results += session.exec(
+            id_results = session.exec(
                 select(Person).where(Person.id.in_(id_set))
             ).all()
 
+            if current_depth == 1 and len(id_results) > threshold:
+                print(f"\n🔥 [ID字段异常] 命中 {len(id_results)} 条")
+                print(f"输入值: {list(id_set)}")
+
+            results += id_results
+
+        # =========================
+        # 🚨 phone 字段
+        # =========================
         if phone_set:
-            results += session.exec(
+            phone_results = session.exec(
                 select(Person).where(Person.phone.in_(phone_set))
             ).all()
 
+            if current_depth == 1 and len(phone_results) > threshold:
+                print(f"\n🔥 [PHONE字段异常] 命中 {len(phone_results)} 条")
+                print(f"输入值: {list(phone_set)}")
+
+            results += phone_results
+
+        # =========================
+        # 🚨 email 字段
+        # =========================
         if email_set:
-            results += session.exec(
+            email_results = session.exec(
                 select(Person).where(Person.email.in_(email_set))
             ).all()
 
+            if current_depth == 1 and len(email_results) > threshold:
+                print(f"\n🔥 [EMAIL字段异常] 命中 {len(email_results)} 条")
+                print(f"输入值: {list(email_set)}")
+
+            results += email_results
+
+        # =========================
+        # 🚨 qq 字段
+        # =========================
         if qq_set:
-            results += session.exec(
+            qq_results = session.exec(
                 select(Person).where(Person.qq.in_(qq_set))
             ).all()
+
+            if current_depth == 1 and len(qq_results) > threshold:
+                print(f"\n🔥 [QQ字段异常] 命中 {len(qq_results)} 条")
+                print(f"输入值: {list(qq_set)}")
+
+            results += qq_results
 
         # 记录本轮是否有新增
         has_new_data = False
